@@ -49,17 +49,17 @@ bars = ib.reqHistoricalData(
     durationStr='1 D',
     barSizeSetting='1 min',
     whatToShow='TRADES',
-    useRTH=True
+    useRTH=False
 )
 
 # Convert to a pandas DataFrame
 df = util.df(bars)
 
+print(df.info())
 print(df.head())  # Print the first few rows
 print(df.tail())  # Print the last few rows
 
 # print(df.to_markdown())
-
 
 # Disconnect
 ib.disconnect()
