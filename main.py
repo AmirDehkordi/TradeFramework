@@ -91,7 +91,6 @@ async def main():
             contract,
             duration_str="1 M",
             bar_size="1 hour",
-            what_to_show="TRADES",
             use_rth=True
         )
         # Save or process df as needed

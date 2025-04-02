@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 from ib_insync import IB, Stock, util, Contract
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,6 @@ class IBDataRetriever:
             end_date_time: str = '',
             duration_str: str = '1 D',
             bar_size: str = '1 min',
-            what_to_show: str = 'TRADES',
             use_rth: bool = True
     ):
         """
@@ -75,19 +75,70 @@ class IBDataRetriever:
         """
         await self.ensure_connection()
         logger.info(f"Requesting historical data for {contract.localSymbol} [{duration_str}, {bar_size}]...")
-
-        # Use the asynchronous version for historical data
-        bars = await self.ib.reqHistoricalDataAsync(
+        logger.info("NOTE: The Price are Mid-Price for OHLC.")
+        bars_mid = await self.ib.reqHistoricalDataAsync(
             contract=contract,
             endDateTime=end_date_time,
             durationStr=duration_str,
             barSizeSetting=bar_size,
-            whatToShow=what_to_show,
+            whatToShow='MIDPOINT',
             useRTH=use_rth,
             formatDate=1,
         )
 
-        df = util.df(bars)
+        bars_trd = await self.ib.reqHistoricalDataAsync(
+            contract=contract,
+            endDateTime=end_date_time,
+            durationStr=duration_str,
+            barSizeSetting=bar_size,
+            whatToShow='TRADES',
+            useRTH=use_rth,
+            formatDate=1,
+        )
+
+        bars_ask = await self.ib.reqHistoricalDataAsync(
+            contract=contract,
+            endDateTime=end_date_time,
+            durationStr=duration_str,
+            barSizeSetting=bar_size,
+            whatToShow='ASK',
+            useRTH=use_rth,
+            formatDate=1,
+        )
+
+        bars_bid = await self.ib.reqHistoricalDataAsync(
+            contract=contract,
+            endDateTime=end_date_time,
+            durationStr=duration_str,
+            barSizeSetting=bar_size,
+            whatToShow='BID',
+            useRTH=use_rth,
+            formatDate=1,
+        )
+
+        df_mid = util.df(bars_mid)
+        df_trd = util.df(bars_trd)
+        df_ask = util.df(bars_ask)
+        df_bid = util.df(bars_bid)
+
+        df_mid = df_mid[['date', 'open', 'high', 'low', 'close']]
+        df_trd = df_trd[['date', 'volume', 'average', 'barCount']]
+        df_ask = df_ask[['date', 'open', 'high', 'low', 'close']]
+        df_bid = df_bid[['date', 'open', 'high', 'low', 'close']]
+
+        df_spd = pd.merge(df_ask, df_bid, on='date', suffixes=('_ask', '_bid'))
+        df_spd['spread'] = (df_spd['low_ask'] + df_spd['high_ask']) / 2 - \
+                           (df_spd['low_bid'] + df_spd['high_bid']) / 2
+        # Calculating Average Bid
+        df_spd['avgbid'] = (df_spd['low_ask'] + df_spd['high_ask'] +
+                            df_spd['low_bid'] + df_spd['high_bid']) / 4
+        # Calculating Relative Spread
+        df_spd['relspd'] = df_spd['spread'] / df_spd['avgbid']
+        df_spd = df_spd[['date', 'avgbid', 'spread', 'relspd']]
+
+        df = pd.merge(df_mid, df_trd, on='date')
+        df = pd.merge(df, df_spd, on='date')
+
         logger.info(f"Received {len(df)} rows of historical data for {contract.localSymbol}.")
         return df
 
@@ -133,4 +184,3 @@ class IBDataRetriever:
 
             # Sleep until next retrieval. Adjust as needed (e.g., 60 for once per minute, etc.).
             await asyncio.sleep(30)
-
