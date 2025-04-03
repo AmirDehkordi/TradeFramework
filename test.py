@@ -72,6 +72,7 @@ async def test():
     print(df.info())
     df.to_csv(r'C:\q\w64\aapl.csv')
 
+
     test_ib.disconnect()
 
 
