@@ -67,8 +67,10 @@ async def test():
     # df = pd.merge(df_mid, df_trd, on='date')
     # df = pd.merge(df, df_spd, on='date')
 
+    df = df.set_index('date')
     print(df.to_markdown())
     print(df.info())
+    df.to_csv(r'C:\q\w64\aapl.csv')
 
     test_ib.disconnect()
 

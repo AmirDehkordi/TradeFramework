@@ -9,4 +9,4 @@ logging.basicConfig(
 
 IB_HOST = '127.0.0.1'
 IB_PORT = 4002
-IB_CLIENT_ID = 42
+IB_CLIENT_ID = 45
