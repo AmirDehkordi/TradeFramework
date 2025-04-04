@@ -89,7 +89,7 @@ async def main():
         contract = ib_data_retriever.create_stock_contract(sym)
         df = await ib_data_retriever.fetch_historical_data(
             contract,
-            duration_str="1 M",
+            duration_str="1 W",
             bar_size="1 hour",
             use_rth=True
         )

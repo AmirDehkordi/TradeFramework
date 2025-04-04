@@ -75,7 +75,7 @@ class IBDataRetriever:
         """
         await self.ensure_connection()
         logger.info(f"Requesting historical data for {contract.localSymbol} [{duration_str}, {bar_size}]...")
-        logger.info("NOTE: The Price are Mid-Price for OHLC.")
+        logger.info("NOTE: The Price Data is Mid-Price for OHLC.")
         bars_mid = await self.ib.reqHistoricalDataAsync(
             contract=contract,
             endDateTime=end_date_time,
@@ -116,15 +116,28 @@ class IBDataRetriever:
             formatDate=1,
         )
 
+        bars_vol = await self.ib.reqHistoricalDataAsync(
+            contract=contract,
+            endDateTime=end_date_time,
+            durationStr=duration_str,
+            barSizeSetting=bar_size,
+            whatToShow='OPTION_IMPLIED_VOLATILITY',
+            useRTH=use_rth,
+            formatDate=1,
+        )
+
         df_mid = util.df(bars_mid)
         df_trd = util.df(bars_trd)
         df_ask = util.df(bars_ask)
         df_bid = util.df(bars_bid)
+        df_vol = util.df(bars_vol)
 
         df_mid = df_mid[['date', 'open', 'high', 'low', 'close']]
         df_trd = df_trd[['date', 'volume', 'average', 'barCount']]
         df_ask = df_ask[['date', 'open', 'high', 'low', 'close']]
         df_bid = df_bid[['date', 'open', 'high', 'low', 'close']]
+        df_vol = df_vol[['date', 'average']]
+        df_vol = df_vol.rename(columns={'average': 'optvol'})
 
         df_spd = pd.merge(df_ask, df_bid, on='date', suffixes=('_ask', '_bid'))
         df_spd['spread'] = (df_spd['low_ask'] + df_spd['high_ask']) / 2 - \
@@ -138,9 +151,12 @@ class IBDataRetriever:
 
         df = pd.merge(df_mid, df_trd, on='date')
         df = pd.merge(df, df_spd, on='date')
+        df = pd.merge(df, df_vol, on='date')
 
         logger.info(f"Received {len(df)} rows of historical data for {contract.localSymbol}.")
-        return df
+        # return df
+        return bars_trd
+
 
     async def fetch_real_time_data(self, contract: Contract):
         """
@@ -175,12 +191,13 @@ class IBDataRetriever:
                     contract,
                     duration_str='1 D',  # last 1 day
                     bar_size='1 min',
-                    what_to_show='TRADES',
                     use_rth=False
                 )
                 # You would store the data in a DB or file here. For demo, let's just log the head.
-                if not df.empty:
-                    logger.info(f"{sym} latest data:\n{df.tail(3)}")
+                print(df)
+                logger.info(f"{sym} last min data {df[-1]}")
+                # if not df.empty:
+                #     logger.info(f"{sym} latest data:\n{df.tail(3)}")
 
             # Sleep until next retrieval. Adjust as needed (e.g., 60 for once per minute, etc.).
-            await asyncio.sleep(30)
+            await asyncio.sleep(5)
