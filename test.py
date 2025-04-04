@@ -70,7 +70,7 @@ async def test():
     df = df.set_index('date')
     print(df.to_markdown())
     print(df.info())
-    df.to_csv(r'C:\q\w64\aapl.csv')
+    df.to_csv(r'C:\q\w64\aapl_recent.csv')
 
     test_ib.disconnect()
 
