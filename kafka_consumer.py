@@ -7,6 +7,7 @@ def process_signal(data):
     if data.get('close') and data['close'] > 200:
         print(f"Signal! {data['symbol']} close is {data['close']}")
 
+
 def main():
     consumer = KafkaConsumer(
         'marketdata',
