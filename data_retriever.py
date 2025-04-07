@@ -3,6 +3,9 @@ import logging
 import time
 from ib_insync import IB, Stock, util, Contract
 import pandas as pd
+from kafka import KafkaProducer
+import json
+
 
 logger = logging.getLogger(__name__)
 
@@ -154,8 +157,7 @@ class IBDataRetriever:
         df = pd.merge(df, df_vol, on='date')
 
         logger.info(f"Received {len(df)} rows of historical data for {contract.localSymbol}.")
-        # return df
-        return bars_trd
+        return df
 
 
     async def fetch_real_time_data(self, contract: Contract):
@@ -179,6 +181,15 @@ class IBDataRetriever:
 
         return bar_generator()
 
+    @staticmethod
+    def send_to_kafka(producer, topic, data):
+        try:
+            message_bytes = json.dumps(data).encode('utf-8')
+            producer.send(topic, message_bytes)
+            print(f"Sent to Kafka: {data}")
+        except Exception as e:
+            print(f"Kafka send failed: {e}")
+
     async def run_continuous_retrieval(self, symbols):
         """
         Example method that continuously retrieves historical data for a list of symbols.
@@ -194,10 +205,21 @@ class IBDataRetriever:
                     use_rth=False
                 )
                 # You would store the data in a DB or file here. For demo, let's just log the head.
-                print(df)
-                logger.info(f"{sym} last min data {df[-1]}")
+                # logger.info(f"{sym} last min data {df[-1]}")
                 # if not df.empty:
                 #     logger.info(f"{sym} latest data:\n{df.tail(3)}")
+                producer = KafkaProducer(bootstrap_servers='localhost:9092')
+                topic = 'marketdata'
+                if not df.empty:
+                    # For demonstration, we take the last 3 rows.
+                    data_to_send = df.tail(3)
+                    # Convert DataFrame to JSON string.
+                    json_message = data_to_send.to_json(orient='records')
+                    # Send the JSON message to Kafka.
+                    producer.send(topic, json_message.encode('utf-8'))
+                    logger.info(f"{sym} latest data sent:\n{json_message}")
 
             # Sleep until next retrieval. Adjust as needed (e.g., 60 for once per minute, etc.).
             await asyncio.sleep(5)
+
+
