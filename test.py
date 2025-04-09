@@ -18,12 +18,18 @@ async def test():
 
     symbol = 'AAPL'
     symcon = test_ib.create_stock_contract(symbol)
-    last_date = datetime.datetime.today().strftime('%Y%m%d') + '-21:00:00'
-    df = await test_ib.fetch_historical_data(
+
+    # df = await test_ib.fetch_historical_data(
+    #     contract=symcon,
+    #     end_date_time=last_date,
+    #     duration_str='24 D',
+    #     bar_size='1 min',
+    #     use_rth=True)
+
+    df = await test_ib.fetch_all_historical_data(
         contract=symcon,
-        end_date_time=last_date,
-        duration_str='24 D',
-        bar_size='1 min',
+        duration='1',
+        bar_size='1 hour',
         use_rth=True)
 
     # df_trd = await test_ib.fetch_historical_data(
@@ -72,6 +78,7 @@ async def test():
     print(df.to_markdown())
     print(df.info())
     # df.to_csv(r'C:\q\w64\aapl_recent.csv')
+    df.to_csv('AAPL.csv')
 
     test_ib.disconnect()
 

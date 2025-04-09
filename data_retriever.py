@@ -178,13 +178,19 @@ class IBDataRetriever:
                                         bar_size: str = '1 min',
                                         use_rth: bool = True
                                         ):
+        """
+        Fetches all the historical data for X number of years
+        """
+
         await self.ensure_connection()
+        duration = int(duration)
         logger.info(f"Subscribing to {duration}-year historical data for {contract.localSymbol}...")
 
         retrieval_date_list = self.create_date_list(duration)
 
         df = pd.DataFrame()
         for end_date in retrieval_date_list:
+            logger.info(f"Starting to get data from {end_date}...")
             temp_df = await self.fetch_historical_data(contract=contract,
                                                        end_date_time=end_date,
                                                        duration_str='24 D',
