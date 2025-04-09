@@ -159,7 +159,6 @@ class IBDataRetriever:
         logger.info(f"Received {len(df)} rows of historical data for {contract.localSymbol}.")
         return df
 
-
     async def fetch_real_time_data(self, contract: Contract):
         """
         Example of streaming real-time bars (5-second bars).
