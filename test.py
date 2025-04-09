@@ -2,6 +2,7 @@ from data_retriever import IBDataRetriever
 from config import IB_HOST, IB_PORT, IB_CLIENT_ID
 import logging
 import asyncio
+import datetime
 import pandas as pd
 
 logger = logging.getLogger()
@@ -17,11 +18,11 @@ async def test():
 
     symbol = 'AAPL'
     symcon = test_ib.create_stock_contract(symbol)
-
+    last_date = datetime.datetime.today().strftime('%Y%m%d') + '-21:00:00'
     df = await test_ib.fetch_historical_data(
         contract=symcon,
-        end_date_time='',
-        duration_str='1 D',
+        end_date_time=last_date,
+        duration_str='24 D',
         bar_size='1 min',
         use_rth=True)
 

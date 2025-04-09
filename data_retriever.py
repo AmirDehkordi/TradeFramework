@@ -3,9 +3,9 @@ import logging
 import time
 from ib_insync import IB, Stock, util, Contract
 import pandas as pd
-from kafka import KafkaProducer
+# from kafka import KafkaProducer
 import json
-
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,19 @@ class IBDataRetriever:
         Create a Stock contract object.
         """
         return Stock(symbol, exchange, currency)
+
+
+    def create_date_list(self, years_to_retrieve: int = 10):
+        """
+        Create a list of dates for each month to retrieve data using them as the end date
+        """
+        number_of_days = years_to_retrieve * 365
+
+        date_list_fetch = [
+            (datetime.datetime.today() - datetime.timedelta(days=30 * i)).strftime("%Y%m%d") + '-21:00:00' for i \
+            in range(int(number_of_days / 30) + 1)]
+
+        return date_list_fetch
 
     async def fetch_historical_data(
             self,
@@ -158,6 +171,31 @@ class IBDataRetriever:
 
         logger.info(f"Received {len(df)} rows of historical data for {contract.localSymbol}.")
         return df
+
+    async def fetch_all_historical_data(self,
+                                        contract: Contract,
+                                        duration: str = '1',
+                                        bar_size: str = '1 min',
+                                        use_rth: bool = True
+                                        ):
+        await self.ensure_connection()
+        logger.info(f"Subscribing to {duration}-year historical data for {contract.localSymbol}...")
+
+        retrieval_date_list = self.create_date_list(duration)
+
+        df = pd.DataFrame()
+        for end_date in retrieval_date_list:
+            temp_df = await self.fetch_historical_data(contract=contract,
+                                                       end_date_time=end_date,
+                                                       duration_str='24 D',
+                                                       bar_size=bar_size,
+                                                       use_rth=use_rth)
+            df = pd.concat([df, temp_df], ignore_index=True)
+
+        df = df.drop_duplicates(ignore_index=True)
+
+        return df
+
 
     async def fetch_real_time_data(self, contract: Contract):
         """
