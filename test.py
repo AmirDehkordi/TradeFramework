@@ -29,7 +29,7 @@ async def test():
     df = await test_ib.fetch_all_historical_data(
         contract=symcon,
         duration='1',
-        bar_size='1 hour',
+        bar_size='1 hour', # or 1 min
         use_rth=True)
 
     # df_trd = await test_ib.fetch_historical_data(
