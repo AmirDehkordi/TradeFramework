@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger()
 
 
-async def test():
+async def fetch_history():
     test_ib = IBDataRetriever(
         host=IB_HOST,
         port=IB_PORT,
@@ -38,4 +38,4 @@ async def test():
     test_ib.disconnect()
 
 
-asyncio.run(test())
+asyncio.run(fetch_history())
