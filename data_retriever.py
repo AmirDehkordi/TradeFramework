@@ -269,7 +269,7 @@ class IBDataRetriever:
             await asyncio.sleep(5)
 
     @staticmethod
-    def spx_top_k_tickers_marketcap():
+    def spx_top_k_tickers_marketcap(k=50):
         """
         Getting top k ticker names in S&P500
         """
@@ -291,7 +291,7 @@ class IBDataRetriever:
             except Exception as e:
                 continue
 
-        top_k = sorted(market_caps, key=lambda x: x[1], reverse=True)[:50]
+        top_k = sorted(market_caps, key=lambda x: x[1], reverse=True)[:k]
 
         top_k_df = pd.DataFrame(top_k, columns=["Ticker", "Market Cap"])
         top_k_df["Market Cap (Billion USD)"] = top_k_df["Market Cap"] / 1e9

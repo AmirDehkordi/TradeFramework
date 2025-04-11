@@ -17,22 +17,23 @@ async def test():
 
     await test_ib.connect()
 
-    symbol = 'AAPL'
-    duration = '5'
-    bar_size = '1 day'
-    symcon = test_ib.create_stock_contract(symbol)
+    top_50_spx = test_ib.spx_top_k_tickers_marketcap(k=50)
+    for symbol in top_50_spx:
+        duration = '5' # in years
+        bar_size = '1 min'  # or 1 min / 1 hour
+        symcon = test_ib.create_stock_contract(symbol)
 
-    df = await test_ib.fetch_all_historical_data(
-        contract=symcon,
-        duration='5',
-        bar_size='1 day',  # or 1 min / 1 hour
-        use_rth=True)
+        df = await test_ib.fetch_all_historical_data(
+            contract=symcon,
+            duration=duration,
+            bar_size=bar_size,
+            use_rth=True)
 
-    df = df.set_index('date')
-    print(df.to_markdown())
-    print(df.info())
-    # df.to_csv(r'C:\q\w64\aapl_recent.csv')
-    df.to_csv(f'{symbol}-{duration}-year-1-{bar_size.split()[-1]}.csv')
+        df = df.set_index('date')
+        print(df.to_markdown())
+        print(df.info())
+
+        df.to_csv(fr'C:\q\w64\IB_Data_SPX50\{symbol}-{duration}-year-1-{bar_size.split()[-1]}.csv')
 
     test_ib.disconnect()
 
