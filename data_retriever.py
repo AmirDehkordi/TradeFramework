@@ -6,6 +6,8 @@ import pandas as pd
 # from kafka import KafkaProducer
 import json
 import datetime
+import yfinance as yf
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -265,5 +267,41 @@ class IBDataRetriever:
 
             # Sleep until next retrieval. Adjust as needed (e.g., 60 for once per minute, etc.).
             await asyncio.sleep(5)
+
+    @staticmethod
+    def spx_top_k_tickers_marketcap():
+        """
+        Getting top k ticker names in S&P500
+        """
+        sp500_df = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0]
+        tickers = sp500_df['Symbol'].tolist()
+
+        tickers = [ticker.replace('.', '-') for ticker in tickers]
+
+        market_caps = []
+        print("Fetching market caps for all S&P 500 companies...")
+
+        for ticker in tqdm(tickers):
+            try:
+                stock = yf.Ticker(ticker)
+                info = stock.info
+                market_cap = info.get("marketCap", None)
+                if market_cap:
+                    market_caps.append((ticker, market_cap))
+            except Exception as e:
+                continue
+
+        top_k = sorted(market_caps, key=lambda x: x[1], reverse=True)[:50]
+
+        top_k_df = pd.DataFrame(top_k, columns=["Ticker", "Market Cap"])
+        top_k_df["Market Cap (Billion USD)"] = top_k_df["Market Cap"] / 1e9
+
+        symbol_to_name = dict(zip(sp500_df['Symbol'].str.replace('.', '-', regex=False), sp500_df['Security']))
+        top_k_df["Company"] = top_k_df["Ticker"].map(symbol_to_name)
+
+        top_k_df = top_k_df[["Company", "Ticker", "Market Cap (Billion USD)"]]
+        print(top_k_df)
+
+        return list(top_k_df['Ticker'])
 
 
