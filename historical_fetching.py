@@ -4,38 +4,52 @@ import logging
 import asyncio
 import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
+import os
 
 logger = logging.getLogger()
 
 
-async def fetch_history():
-    test_ib = IBDataRetriever(
+async def test():
+    fetch_ib = IBDataRetriever(
         host=IB_HOST,
         port=IB_PORT,
         client_id=IB_CLIENT_ID)
 
-    await test_ib.connect()
+    await fetch_ib.connect()
 
-    top_50_spx = test_ib.spx_top_k_tickers_marketcap(k=50)
-    for symbol in top_50_spx:
-        duration = '5' # in years
-        bar_size = '1 min'  # or 1 min / 1 hour
-        symcon = test_ib.create_stock_contract(symbol)
+    spx50_list = pd.read_csv('SPX50.csv')['Ticker']
+    for symbol in spx50_list:
+        symbol = symbol
+        bar_size = '1 day'  # or 1 min / 1 hour
+        symbol_file_name = fr'D:\SPX50\{symbol}-1-{bar_size.split()[-1]}.csv'
+        symcon = fetch_ib.create_stock_contract(symbol)
 
-        df = await test_ib.fetch_all_historical_data(
-            contract=symcon,
-            duration=duration,
-            bar_size=bar_size,
-            use_rth=True)
+        # Check if the file exists (Update or Initialize)
+        if os.path.exists(symbol_file_name):
+            print(f'Updating data for {symbol}')
+            temp_df = pd.read_csv(symbol_file_name)
+            last_date_available = temp_df['date'].values[-1]
+            logger.info(f"The file for {symbol} exists. Updating the file from {last_date_available}...")
+            update_df = await fetch_ib.fetch_historical_data(symcon,
+                                                             duration_str="3 D",
+                                                             bar_size=bar_size,
+                                                             use_rth=True)
+            update_df = pd.concat([temp_df, update_df], ignore_index=True)
+            update_df = update_df.drop_duplicates(subset=['date'])
+            update_df.to_csv(symbol_file_name)
+        else:
+            print(f'Fetching historical data for {symbol}')
+            logger.info(f"The file for {symbol} does not exist. Fetching all the historical data from 2020-01-01...")
+            df = await fetch_ib.fetch_all_historical_data(contract=symcon,
+                                                          start_year=2024,
+                                                          bar_size=bar_size,
+                                                          use_rth=True)
+            df['date'] = pd.to_datetime(df['date'])
+            df = df[df['date'] >= '2020-01-01']
+            df = df.set_index('date')
+            df.to_csv(symbol_file_name)
 
-        df = df.set_index('date')
-        print(df.to_markdown())
-        print(df.info())
-
-        df.to_csv(fr'C:\q\w64\IB_Data_SPX50\{symbol}-{duration}-year-1-{bar_size.split()[-1]}.csv')
-
-    test_ib.disconnect()
+    fetch_ib.disconnect()
 
 
-asyncio.run(fetch_history())
+asyncio.run(test())

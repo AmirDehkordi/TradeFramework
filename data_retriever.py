@@ -68,15 +68,16 @@ class IBDataRetriever:
         return Stock(symbol, exchange, currency)
 
 
-    def create_date_list(self, years_to_retrieve: int = 10):
+    def create_date_list(self, start_year: int = 2020):
         """
         Create a list of dates for each month to retrieve data using them as the end date
         """
-        number_of_days = years_to_retrieve * 365
+        number_of_days = (datetime.date.today() - datetime.date(start_year, 1, 1)).days
 
         date_list_fetch = [
             (datetime.datetime.today() - datetime.timedelta(days=30 * i)).strftime("%Y%m%d") + '-21:00:00' for i \
             in range(int(number_of_days / 30) + 1)]
+        date_list_fetch.append(f'{start_year}0101-21:00:00')
 
         return date_list_fetch
 
@@ -91,7 +92,7 @@ class IBDataRetriever:
         """
         Retrieve historical data from IB. Returns a pandas DataFrame.
         """
-        await self.ensure_connection()
+        # await self.ensure_connection()
         logger.info(f"Requesting historical data for {contract.localSymbol} [{duration_str}, {bar_size}]...")
         logger.info("NOTE: The Price Data is Mid-Price for OHLC.")
         bars_mid = await self.ib.reqHistoricalDataAsync(
@@ -176,7 +177,7 @@ class IBDataRetriever:
 
     async def fetch_all_historical_data(self,
                                         contract: Contract,
-                                        duration: str = '1',
+                                        start_year: int = 2020,
                                         bar_size: str = '1 min',
                                         use_rth: bool = True
                                         ):
@@ -184,11 +185,10 @@ class IBDataRetriever:
         Fetches all the historical data for X number of years
         """
 
-        await self.ensure_connection()
-        duration = int(duration)
-        logger.info(f"Subscribing to {duration}-year historical data for {contract.localSymbol}...")
+        # await self.ensure_connection()
+        logger.info(f"Subscribing to historical data from {start_year} for {contract.localSymbol}...")
 
-        retrieval_date_list = self.create_date_list(duration)
+        retrieval_date_list = self.create_date_list(start_year)
 
         df = pd.DataFrame()
         for end_date in retrieval_date_list:
