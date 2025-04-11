@@ -198,9 +198,8 @@ class IBDataRetriever:
                                                        use_rth=use_rth)
             df = pd.concat([df, temp_df], ignore_index=True)
             df = df.drop_duplicates(subset=['date'])
-            df = df.sort_index()
-            print(temp_df)
 
+        df = df.sort_values(by='date', ascending=True)
 
         return df
 

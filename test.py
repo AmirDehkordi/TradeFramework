@@ -4,6 +4,7 @@ import logging
 import asyncio
 import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
 
 logger = logging.getLogger()
 
@@ -28,9 +29,11 @@ async def test():
 
     df = await test_ib.fetch_all_historical_data(
         contract=symcon,
-        duration='1',
-        bar_size='1 hour', # or 1 min
+        duration='5',
+        bar_size='1 day',  # or 1 min / 1 hour
         use_rth=True)
+
+    plt.plot()
 
     # df_trd = await test_ib.fetch_historical_data(
     #     contract=symcon,
